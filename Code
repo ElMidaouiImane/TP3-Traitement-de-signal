@@ -1,0 +1,123 @@
+clear all
+close all
+clc
+
+-------------------------------------------------------
+   Suppression du bruit provoqué par les mouvements
+                      du corps
+-------------------------------------------------------   
+
+%%
+load("ecg.mat");
+x = ecg;
+
+%%
+fs = 500;
+N = length(x)
+ts = 1/fs
+%%tracer ECG en fonction de temps
+t = (0:N-1)*ts;
+plot(t,x);
+title("le signal ECG");
+
+%%
+%TFD
+y = fft(x);
+f = (-N/2:N/2-1)*(fs/N);
+
+%%
+%%suppression du bruit des movements de corps
+h = ones(size(x));
+fh = 0.5;
+index_h = ceil(fh*N/fs);
+h(1:index_h) = 0;
+h(N-index_h+1:N) = 0;
+
+%%
+%TFDI
+ecg1_freq = h.*y;
+ecg1 = ifft(ecg1_freq,"symmetric");
+plot(t,ecg1);
+title("ecg1")
+
+%%
+plot(t,x-ecg1);
+title("La différence")
+ 
+--------------------------------------------------------
+       Suppression des interférences des lignes
+                   électriques 50Hz
+-------------------------------------------------------- 
+
+%%
+%suppression de 50 Hz
+
+Notch = ones(size(x));
+fcn = 50;
+index_hcn = ceil(fcn*N/fs)+1;
+Notch(index_hcn) = 0;
+Notch(index_hcn+2) = 0;
+
+ecg2_freq = Notch.*fft(ecg1);
+ecg2 = ifft(ecg2_freq,"symmetric");
+subplot(211)
+plot(t,ecg);
+xlim([0.5 1.5])
+title("signal filtré")
+subplot(212)
+%%
+plot(t,ecg2);
+title("ecg2")
+%xlim([0.5 1.5])
+
+-------------------------------------------------------
+       Amélioration du rapport signal sur bruit
+-------------------------------------------------------
+
+%%
+pass_bas = zeros(size(x));
+fcb = 30;
+index_hcb = ceil(fcb*N/fs);
+pass_bas(1:index_hcb) = 1;
+pass_bas(N-index_hcb+1:N) = 1;
+
+ecg3_freq = pass_bas.*fft(ecg2);
+ecg3 = ifft(ecg3_freq,"symmetric");
+subplot(211)
+plot(t,ecg);
+xlim([0.5 1.5])
+title('le signal original')
+subplot(212)
+plot(t,ecg3);
+xlim([0.5 1.5])
+title('ecg3')
+
+--------------------------------------------------------
+    Identification de la fréquence cardiaque avec la
+                fonction d’autocorrélation
+--------------------------------------------------------
+
+%%
+%autocorrélation de signal ECG
+[c,lags] = xcorr(ecg2,ecg2);
+
+E = length(c); %la longueur de la fonction d'autocorrélation
+Vector = [0]; %initialisation d'un vecteur
+for n = 1:E
+    if c(n) > 10
+        Vector(end+1) = c(n); %l'ajout de valeur au vecteur
+    end
+    %pour éliminer les valeurs qui égals au 0
+    M = max(Vector);
+    in = find(c == M);
+    s = lags(in);
+    if s <12
+        Vector(Vector == M) = [];
+    end
+end
+%extraction de la valeur max de vecteur
+Max = max(Vector);
+in2 = find(c == Max); %indice de la valeur max
+s2 = lags(in2);%la valeur de l'indice dans lags
+
+frequency = (s/fs)*60 %calculer la fréquence
