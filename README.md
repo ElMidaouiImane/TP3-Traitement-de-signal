@@ -258,6 +258,10 @@ frequency = (s/fs)*60 %calculer la fréquence
 
 OUI le programme a trouvé le bon pouls
 
+![frequency](https://user-images.githubusercontent.com/121026639/210157534-68b7db45-ee5a-43b9-8ce0-8dc5d2bbbeb6.png)
+
+0.914*60 = 54.8400
+
 
 
 
